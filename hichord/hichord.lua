@@ -1365,8 +1365,6 @@ function init()
   update_grid_size()
 
   init_params()
-
-  init_params()
   apply_adsr()
   engine.waveform(0)
   engine.gain(0.8)
@@ -1398,6 +1396,13 @@ function cleanup()
   for i=1,2 do
     if loop_clocks[i] then
       pcall(function() clock.cancel(loop_clocks[i]) end)
+    end
+  end
+  clock.cancel_all()
+  -- MIDI panic: all notes off on all channels
+  if st and st.midi_dev then
+    for ch=1,16 do
+      pcall(function() st.midi_dev:cc(123, 0, ch) end)
     end
   end
 end
