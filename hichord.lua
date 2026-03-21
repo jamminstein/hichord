@@ -272,14 +272,14 @@ local function play_chord(root_idx, type_idx, octave_num, vel)
 end
 
 local function all_notes_off()
-  engine.noteOffAll()
+  engine.noteKillAll()
   if midi_out then
     for ch = 1, 16 do
       pcall(function() midi_out:cc(123, 0, ch) end)
     end
   end
   if opxy_out and params:get("opxy_enabled") == 2 then
-    opxy_out:all_notes_off(params:get("opxy_channel"))
+    for ch=1,16 do opxy_out:cc(123, 0, ch) end
   end
 end
 
