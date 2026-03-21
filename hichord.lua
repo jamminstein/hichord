@@ -31,6 +31,7 @@ end
 
 local g = grid.connect()
 local midi_out = nil
+local screen_clock_id = nil
 
 local function midi_to_hz(note)
   return 440 * 2^((note - 69) / 12)
@@ -618,7 +619,7 @@ function init()
     state.velocity_base = val
   end)
 
-  clock.run(function()
+  screen_clock_id = clock.run(function()
     while true do
       state.beat_phase = (state.beat_phase + 0.1) % 1.0
 
@@ -654,5 +655,5 @@ end
 
 function cleanup()
   all_notes_off()
-  clock.cancel_all()
+  if screen_clock_id then clock.cancel(screen_clock_id) end
 end
