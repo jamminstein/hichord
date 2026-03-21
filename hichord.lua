@@ -6,6 +6,7 @@
 -- OP-XY MIDI: strum timing mapped to CC 20 (attack)
 
 engine.name = "MollyThePoly"
+local MollyThePoly = require "molly_the_poly/lib/molly_the_poly_engine"
 
 local ControlSpec = require "controlspec"
 local tab = require "tabutil"
@@ -572,6 +573,17 @@ function midi.event(data)
 end
 
 function init()
+  -- MollyThePoly sound params
+  MollyThePoly.add_params()
+  -- Warm chord preset
+  params:set("osc_wave_shape", 0.3)
+  params:set("lp_filter_cutoff", 2000)
+  params:set("lp_filter_resonance", 0.15)
+  params:set("env_2_attack", 0.01)
+  params:set("env_2_decay", 0.8)
+  params:set("env_2_sustain", 0.6)
+  params:set("env_2_release", 1.0)
+
   for slot = 1, 7 do
     state.chord_slots[slot].notes = build_chord(
       state.chord_slots[slot].root,
