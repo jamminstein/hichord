@@ -36,7 +36,7 @@
 -- - Strum timing: configurable delay between chord note onsets (0-100ms)
 -- - Screen redesign: hierarchical brightness zones with visual zones
 
-engine.name = "PolyPerc"
+engine.name = "MollyThePoly"
 
 local ControlSpec = require "controlspec"
 local tab = require "tabutil"
@@ -47,6 +47,10 @@ local tab = require "tabutil"
 
 local g = grid.connect()
 local midi_out = nil
+
+local function midi_to_hz(note)
+  return 440 * 2^((note - 69) / 12)
+end
 
 local state = {
   -- chord & voicing
@@ -112,6 +116,10 @@ local state = {
   velocity_mode = 1,  -- 1=fixed, 2=random, 3=dynamic
   velocity_base = 100,
   grid_buttons_held = 0,  -- count of simultaneously held grid buttons
+  
+  -- Engine note tracking for polyphonic release
+  engine_notes = {},  -- map of midi_note -> engine_id
+  next_engine_id = 1,
 }
 
 local NOTES = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"}
@@ -211,7 +219,12 @@ local function play_chord_with_strum(notes, velocity)
     -- No strum: play all notes together
     for _, n in ipairs(play_notes) do
       local vel = get_velocity(base_vel)
-      engine.noteOn(n, vel)
+      local freq = midi_to_hz(n)
+      local engine_id = state.next_engine_id
+      engine.noteOn(engine_id, freq, vel / 127)
+      state.engine_notes[n] = engine_id
+      state.next_engine_id = state.next_engine_id + 1
+      
       if midi_out then
         pcall(function() midi_out:note_on(n, vel, state.midi_channel) end)
       end
@@ -231,7 +244,12 @@ local function play_chord_with_strum(notes, velocity)
     clock.run(function()
       for idx, n in ipairs(play_notes) do
         local vel = get_velocity(base_vel)
-        engine.noteOn(n, vel)
+        local freq = midi_to_hz(n)
+        local engine_id = state.next_engine_id
+        engine.noteOn(engine_id, freq, vel / 127)
+        state.engine_notes[n] = engine_id
+        state.next_engine_id = state.next_engine_id + 1
+        
         if midi_out then
           pcall(function() midi_out:note_on(n, vel, state.midi_channel) end)
         end
@@ -294,7 +312,7 @@ local function play_chord(root_idx, type_idx, octave_num, vel)
 end
 
 local function all_notes_off()
-  engine.allOff()
+  engine.noteOffAll()
   if midi_out then
     for ch = 1, 16 do
       pcall(function() midi_out:cc(123, 0, ch) end)
@@ -609,8 +627,8 @@ function midi.event(data)
     else
       -- Sustain pedal released: send note_off for all sustained notes
       state.sustain_held = false
-      for note_num, _ in pairs(state.sustained_notes) do
-        engine.noteOff(note_num)
+      for note_num, engine_id in pairs(state.sustained_notes) do
+        engine.noteOff(engine_id)
         if midi_out then
           pcall(function() midi_out:note_off(note_num, 0, state.midi_channel) end)
         end
