@@ -488,10 +488,15 @@ function redraw()
 end
 
 function key(n, z)
-  if n == 1 and z == 1 then
-    state.page_a = not state.page_a
+  if n == 1 then
+    k1_held = (z == 1)
+    return
   elseif n == 2 and z == 1 then
-    state.chord_type = (state.chord_type % 4) + 1
+    if k1_held then
+      state.page_a = not state.page_a
+    else
+      state.chord_type = (state.chord_type % 4) + 1
+    end
   elseif n == 3 and z == 1 then
     state.octave = math.min(7, state.octave + 1)
   end
