@@ -327,7 +327,7 @@ end
 
 function redraw()
   screen.clear()
-  screen.aa(1)
+  screen.aa(0)
   
   if state.page_a then
     screen.level(15)
