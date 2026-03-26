@@ -1,15 +1,16 @@
--- hichord.lua  v3.0 with OP-XY MIDI
+-- hichord.lua  v3.1 with humanized drums
 -- Norns port of HiChord (hichord.shop) firmware 2.6.9
 -- Grid = physical HiChord device replica (16×8)
 -- Norns screen Page A = traditional param/menu display
 -- Norns screen Page B = animated HiChord OLED replica
+-- Norns screen Page C = drum pattern + humanization display
 -- OP-XY MIDI: strum timing mapped to CC 20 (attack)
 
-engine.name = "MollyThePoly"
-local MollyThePoly = require "molly_the_poly/lib/molly_the_poly_engine"
+engine.name = "HiChord"
 
 local ControlSpec = require "controlspec"
 local tab = require "tabutil"
+local drums = require "hichord/lib/drums"
 
 -- OP-XY MIDI helpers
 local opxy_out = nil
@@ -45,7 +46,7 @@ local state = {
   extensions = {},
 
   -- performance
-  page_a = true,
+  current_page = 1, -- 1=params, 2=OLED, 3=drums
   key_held = nil,
   bpm = 120,
   swing = 0,
@@ -99,7 +100,6 @@ local state = {
   grid_buttons_held = 0,
   
   engine_notes = {},
-  next_engine_id = 1,
 }
 
 local NOTES = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"}
@@ -184,19 +184,16 @@ local function play_chord_with_strum(notes, velocity)
   if state.strum_delay <= 0 then
     for _, n in ipairs(play_notes) do
       local vel = get_velocity(base_vel)
-      local freq = midi_to_hz(n)
-      local engine_id = state.next_engine_id
-      engine.noteOn(engine_id, freq, vel / 127)
-      state.engine_notes[n] = engine_id
-      state.next_engine_id = state.next_engine_id + 1
-      
+      engine.noteOn(n, vel / 127)
+      state.engine_notes[n] = true
+
       if midi_out then
         pcall(function() midi_out:note_on(n, vel, state.midi_channel) end)
       end
       opxy_note_on(n, vel)
-      
+
       if state.sustain_held then
-        state.sustained_notes[n] = engine_id
+        state.sustained_notes[n] = true
       end
     end
     -- Map strum timing to CC 20 (attack): no strum = fast attack
@@ -210,26 +207,23 @@ local function play_chord_with_strum(notes, velocity)
     clock.run(function()
       for idx, n in ipairs(play_notes) do
         local vel = get_velocity(base_vel)
-        local freq = midi_to_hz(n)
-        local engine_id = state.next_engine_id
-        engine.noteOn(engine_id, freq, vel / 127)
-        state.engine_notes[n] = engine_id
-        state.next_engine_id = state.next_engine_id + 1
-        
+        engine.noteOn(n, vel / 127)
+        state.engine_notes[n] = true
+
         if midi_out then
           pcall(function() midi_out:note_on(n, vel, state.midi_channel) end)
         end
         opxy_note_on(n, vel)
-        
+
         if state.sustain_held then
-          state.sustained_notes[n] = engine_id
+          state.sustained_notes[n] = true
         end
         if idx < num_notes then
           clock.sleep(delay_sec)
         end
       end
     end)
-    
+
     -- Map strum timing to CC 20 (attack): slower strum = longer attack
     local attack_cc = math.floor((state.strum_delay / 100) * 127)
     opxy_cc(20, attack_cc)
@@ -275,6 +269,7 @@ end
 
 local function all_notes_off()
   engine.noteKillAll()
+  state.engine_notes = {}
   if midi_out then
     for ch = 1, 16 do
       pcall(function() midi_out:cc(123, 0, ch) end)
@@ -325,11 +320,89 @@ local function grid_redraw()
   g:refresh()
 end
 
+-- Draw drum pattern page (Page C)
+local function draw_drum_page()
+  local pattern_data = drums.get_pattern_display()
+  local step = drums.get_step()
+  local running = drums.is_running()
+
+  -- Header
+  screen.level(15)
+  screen.move(0, 8)
+  screen.text("DRUMS")
+  screen.level(running and 15 or 4)
+  screen.move(36, 8)
+  screen.text(running and "PLAY" or "STOP")
+  screen.level(10)
+  screen.move(64, 8)
+  screen.text(drums.get_preset_name())
+
+  if not pattern_data then return end
+
+  -- Draw 4 voice rows x 16 step columns
+  local voices = {"kick", "snare", "hat", "perc"}
+  local labels = {"K", "S", "H", "P"}
+  local row_y = 14
+
+  for v = 1, 4 do
+    local y = row_y + (v - 1) * 12
+    local pat = pattern_data[voices[v]]
+    local vel = pattern_data[voices[v] .. "_vel"]
+    local muted = drums.is_muted(v)
+
+    -- Voice label
+    screen.level(muted and 2 or 8)
+    screen.move(0, y + 8)
+    screen.text(labels[v])
+
+    -- Steps
+    for s = 1, 16 do
+      local x = 10 + (s - 1) * 7
+      local is_current = (s == step and running)
+
+      if pat[s] == 1 then
+        -- Active step: brightness based on velocity
+        local v_level = math.floor((vel[s] / 127) * 12) + 3
+        if muted then v_level = 2 end
+        screen.level(is_current and 15 or v_level)
+        screen.rect(x, y, 6, 9)
+        screen.fill()
+
+        -- Ghost notes get a dot instead of filled rect
+        if vel[s] < 50 and not muted then
+          screen.level(0)
+          screen.rect(x + 1, y + 1, 4, 7)
+          screen.fill()
+          screen.level(is_current and 15 or v_level)
+          screen.rect(x + 2, y + 3, 2, 3)
+          screen.fill()
+        end
+      else
+        -- Empty step
+        screen.level(is_current and 6 or 1)
+        screen.rect(x, y, 6, 9)
+        screen.stroke()
+      end
+    end
+  end
+
+  -- Bottom bar: humanization params
+  screen.level(5)
+  screen.move(0, 62)
+  screen.text("GRV:" .. drums.get_humanize())
+  screen.move(35, 62)
+  screen.text("GHO:" .. drums.get_ghost_density())
+  screen.move(72, 62)
+  screen.text("FEL:" .. drums.get_feel())
+  screen.move(104, 62)
+  screen.text("JIT:" .. drums.get_jitter())
+end
+
 function redraw()
   screen.clear()
   screen.aa(0)
-  
-  if state.page_a then
+
+  if state.current_page == 1 then
     screen.level(15)
     screen.move(0, 10)
     screen.text("HICHORD v3.0")
@@ -366,7 +439,7 @@ function redraw()
     else
       screen.text("OP-XY: OFF")
     end
-  else
+  elseif state.current_page == 2 then
     -- PAGE B: animated display
     screen.level(4)
     screen.move(2, 7)
@@ -465,19 +538,6 @@ function redraw()
     screen.move(122, 58)
     screen.text("CH" .. state.midi_channel)
     
-    if state.popup_time > 0 and state.popup_param then
-      local pop_y = 30
-      local pop_x = 64
-
-      screen.level(12)
-      screen.move(pop_x, pop_y)
-      screen.text_center(state.popup_param)
-
-      screen.level(10)
-      screen.move(pop_x, pop_y + 10)
-      screen.text_center(tostring(state.popup_val))
-    end
-
     if state.chord_display_time > 0 and state.last_triggered_chord_name ~= "" then
       screen.level(15)
       screen.font_size(24)
@@ -485,6 +545,24 @@ function redraw()
       screen.text_center(state.last_triggered_chord_name)
       screen.font_size(8)
     end
+  elseif state.current_page == 3 then
+    -- PAGE C: drums
+    draw_drum_page()
+  end
+
+  -- Popup overlay (shown on all pages)
+  if state.popup_time > 0 and state.popup_param then
+    screen.level(0)
+    screen.rect(20, 20, 88, 24)
+    screen.fill()
+    screen.level(15)
+    screen.rect(20, 20, 88, 24)
+    screen.stroke()
+    screen.move(64, 34)
+    screen.text_center(state.popup_param)
+    screen.level(12)
+    screen.move(64, 42)
+    screen.text_center(tostring(state.popup_val))
   end
 
   screen.update()
@@ -496,33 +574,63 @@ function key(n, z)
     return
   elseif n == 2 and z == 1 then
     if k1_held then
-      state.page_a = not state.page_a
+      -- Cycle pages: 1 (params) -> 2 (OLED) -> 3 (drums)
+      state.current_page = (state.current_page % 3) + 1
     else
       state.chord_type = (state.chord_type % 4) + 1
     end
   elseif n == 3 and z == 1 then
-    state.octave = math.min(7, state.octave + 1)
+    if k1_held then
+      -- K1+K3: toggle drum sequencer
+      drums.toggle()
+    else
+      state.octave = math.min(7, state.octave + 1)
+    end
   end
   grid_redraw()
   redraw()
 end
 
 function enc(n, d)
-  if n == 1 then
-    state.root_note = ((state.root_note - 1 + d) % 12) + 1
-    state.popup_param = "ROOT"
-    state.popup_val = NOTES[state.root_note]
-    state.popup_time = 8
-  elseif n == 2 then
-    state.chord_type = util.clamp(state.chord_type + d, 1, #CHORD_SHAPES)
-    state.popup_param = "CHORD"
-    state.popup_val = CHORD_SHAPES[state.chord_type].name
-    state.popup_time = 8
-  elseif n == 3 then
-    state.strum_time = math.max(0, math.min(100, state.strum_time + d))
-    state.popup_param = "STRUM"
-    state.popup_val = state.strum_time .. "ms"
-    state.popup_time = 8
+  if state.current_page == 3 then
+    -- Drum page encoders
+    if n == 1 then
+      local idx = drums.get_preset_idx() + d
+      local num = #drums.PRESET_ORDER
+      idx = ((idx - 1) % num) + 1
+      drums.set_preset(idx)
+      state.popup_param = "GROOVE"
+      state.popup_val = drums.get_preset_name()
+      state.popup_time = 8
+    elseif n == 2 then
+      drums.set_humanize(drums.get_humanize() + d)
+      state.popup_param = "GROOVE AMT"
+      state.popup_val = drums.get_humanize() .. "%"
+      state.popup_time = 8
+    elseif n == 3 then
+      drums.set_ghost_density(drums.get_ghost_density() + d)
+      state.popup_param = "GHOST DENSITY"
+      state.popup_val = drums.get_ghost_density() .. "%"
+      state.popup_time = 8
+    end
+  else
+    -- Chord page encoders
+    if n == 1 then
+      state.root_note = ((state.root_note - 1 + d) % 12) + 1
+      state.popup_param = "ROOT"
+      state.popup_val = NOTES[state.root_note]
+      state.popup_time = 8
+    elseif n == 2 then
+      state.chord_type = util.clamp(state.chord_type + d, 1, #CHORD_SHAPES)
+      state.popup_param = "CHORD"
+      state.popup_val = CHORD_SHAPES[state.chord_type].name
+      state.popup_time = 8
+    elseif n == 3 then
+      state.strum_time = math.max(0, math.min(100, state.strum_time + d))
+      state.popup_param = "STRUM"
+      state.popup_val = state.strum_time .. "ms"
+      state.popup_time = 8
+    end
   end
   grid_redraw()
   redraw()
@@ -561,8 +669,8 @@ function midi.event(data)
       state.sustained_notes = {}
     else
       state.sustain_held = false
-      for note_num, engine_id in pairs(state.sustained_notes) do
-        engine.noteOff(engine_id)
+      for note_num, _ in pairs(state.sustained_notes) do
+        engine.noteOff(note_num)
         if midi_out then
           pcall(function() midi_out:note_off(note_num, 0, state.midi_channel) end)
         end
@@ -574,16 +682,17 @@ function midi.event(data)
 end
 
 function init()
-  -- MollyThePoly sound params
-  MollyThePoly.add_params()
-  -- Warm chord preset
-  params:set("osc_wave_shape", 0.3)
-  params:set("lp_filter_cutoff", 2000)
-  params:set("lp_filter_resonance", 0.15)
-  params:set("env_2_attack", 0.01)
-  params:set("env_2_decay", 0.8)
-  params:set("env_2_sustain", 0.6)
-  params:set("env_2_release", 1.0)
+  -- Warm chord preset via engine commands
+  engine.cutoff(2000)
+  engine.res(0.15)
+  engine.attack(0.01)
+  engine.decay(0.8)
+  engine.sustain(0.6)
+  engine.release(1.0)
+
+  -- Initialize drum module
+  drums.add_params()
+  drums.set_midi_out(midi_out)
 
   for slot = 1, 7 do
     state.chord_slots[slot].notes = build_chord(
@@ -654,6 +763,7 @@ function init()
 end
 
 function cleanup()
+  drums.cleanup()
   all_notes_off()
   if screen_clock_id then clock.cancel(screen_clock_id) end
 end
