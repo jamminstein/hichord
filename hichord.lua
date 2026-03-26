@@ -1,3 +1,6 @@
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
 -- hichord.lua  v4.0 — Sunday Service Edition
 -- Norns port of HiChord (hichord.shop) firmware 2.6.9
 -- Grid = physical HiChord device replica (16×8)
@@ -699,33 +702,16 @@ function redraw()
 end
 
 function key(n, z)
-  if n == 1 then
-    k1_held = (z == 1)
-    return
-  elseif n == 2 and z == 1 then
-    if k1_held then
-      -- Cycle pages: A -> B -> C (gospel) -> A
-      if state.page_a then
-        state.page_a = false
-        state.gospel_page = false
-      elseif not state.gospel_page then
-        state.gospel_page = true
-        state.page_a = false
+  if n == 2 and z == 1 then
+    if state.gospel_page then
+      -- In gospel mode: K2 = start/stop automation
+      if state.gospel_mode then
+        gospel_stop()
       else
-        state.gospel_page = false
-        state.page_a = true
+        gospel_start()
       end
     else
-      if state.gospel_page then
-        -- In gospel mode: K2 = start/stop automation
-        if state.gospel_mode then
-          gospel_stop()
-        else
-          gospel_start()
-        end
-      else
-        state.chord_type = (state.chord_type % 4) + 1
-      end
+      state.chord_type = (state.chord_type % 4) + 1
     end
   elseif n == 3 and z == 1 then
     if state.gospel_page then
@@ -743,12 +729,43 @@ function key(n, z)
   redraw()
 end
 
+local PAGE_NAMES = {"A", "B", "C"}
+
 function enc(n, d)
-  if state.gospel_page then
-    -- Gospel mode encoders
+  if n == 1 then
+    -- E1: cycle pages (A -> B -> C -> A)
+    if d > 0 then
+      if state.page_a then
+        state.page_a = false
+        state.gospel_page = false
+      elseif not state.gospel_page then
+        state.gospel_page = true
+        state.page_a = false
+      else
+        state.gospel_page = false
+        state.page_a = true
+      end
+    elseif d < 0 then
+      if state.page_a then
+        state.gospel_page = true
+        state.page_a = false
+      elseif state.gospel_page then
+        state.gospel_page = false
+        state.page_a = false
+      else
+        state.page_a = true
+        state.gospel_page = false
+      end
+    end
+    local page = state.page_a and "A" or (state.gospel_page and "C: SUNDAY SERVICE" or "B")
+    state.popup_param = "PAGE"
+    state.popup_val = page
+    state.popup_time = 10
+  elseif state.gospel_page then
+    -- Gospel mode: E2/E3
     local gs = state.gospel_state
-    if n == 1 then
-      -- E1: cycle through progressions
+    if n == 2 then
+      -- E2: cycle through progressions
       local names = gospel.PROGRESSION_NAMES
       local cur_idx = 1
       for i, name in ipairs(names) do
@@ -761,18 +778,6 @@ function enc(n, d)
       state.popup_param = "PROG"
       state.popup_val = gs.progression_name
       state.popup_time = 12
-    elseif n == 2 then
-      -- E2: gospel key
-      local keys = gospel.GOSPEL_KEYS
-      local cur_idx = 1
-      for i, gk in ipairs(keys) do
-        if gk.root == gs.key_root then cur_idx = i end
-      end
-      cur_idx = ((cur_idx - 1 + d) % #keys) + 1
-      gs.key_root = keys[cur_idx].root
-      state.popup_param = "KEY"
-      state.popup_val = keys[cur_idx].name
-      state.popup_time = 12
     elseif n == 3 then
       -- E3: manual intensity
       gs.intensity = math.max(0, math.min(1.0, gs.intensity + d * 0.05))
@@ -782,21 +787,16 @@ function enc(n, d)
       state.popup_time = 8
     end
   else
-    -- Standard mode encoders
-    if n == 1 then
+    -- Standard mode: E2/E3
+    if n == 2 then
       state.root_note = ((state.root_note - 1 + d) % 12) + 1
       state.popup_param = "ROOT"
       state.popup_val = NOTES[state.root_note]
       state.popup_time = 8
-    elseif n == 2 then
+    elseif n == 3 then
       state.chord_type = util.clamp(state.chord_type + d, 1, #CHORD_SHAPES)
       state.popup_param = "CHORD"
       state.popup_val = CHORD_SHAPES[state.chord_type].name
-      state.popup_time = 8
-    elseif n == 3 then
-      state.strum_time = math.max(0, math.min(100, state.strum_time + d))
-      state.popup_param = "STRUM"
-      state.popup_val = state.strum_time .. "ms"
       state.popup_time = 8
     end
   end
