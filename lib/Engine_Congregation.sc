@@ -1,9 +1,9 @@
-// Engine_SundayService.sc
-// Choir voice engine for HiChord gospel-hip-hop automation
-// Inspired by Kanye West's Sunday Service / Jesus Is King sonic palette
-// SATB choir voices with vibrato, formant shaping, breath texture, and lush space
+// Engine_Congregation.sc
+// Choir voice + drums engine for HiChord
+// SATB voices with formant shaping, vibrato, breath texture,
+// cathedral reverb, humanized drums, and lush space
 
-Engine_SundayService : CroneEngine {
+Engine_Congregation : CroneEngine {
 
   var <voices;       // Dictionary: note -> array of synths (one per voice part)
   var <reverbSynth;
@@ -34,7 +34,7 @@ Engine_SundayService : CroneEngine {
     // ── Choir Voice ──────────────────────────────────────────
     // Each voice part (soprano/alto/tenor/bass/lead) is a separate synth
     // with formant-shaped oscillators, vibrato, and breath noise
-    SynthDef(\sunday_choir_voice, {
+    SynthDef(\cong_choir_voice, {
       | out=0, freq=440, amp=0.3, pan=0, gate=1,
         attack=0.08, decay=0.2, sustain=0.85, release=1.2,
         vibRate=5.5, vibDepth=0.004,
@@ -85,7 +85,7 @@ Engine_SundayService : CroneEngine {
 
     // ── Lead Voice ───────────────────────────────────────────
     // Brighter, more prominent, with wider vibrato for solo/call lines
-    SynthDef(\sunday_lead_voice, {
+    SynthDef(\cong_lead_voice, {
       | out=0, freq=440, amp=0.4, pan=0, gate=1,
         attack=0.03, decay=0.15, sustain=0.9, release=0.8,
         vibRate=6.0, vibDepth=0.006,
@@ -115,7 +115,7 @@ Engine_SundayService : CroneEngine {
 
     // ── Sub Bass Voice ───────────────────────────────────────
     // Deep, warm foundation - hip-hop influenced sub
-    SynthDef(\sunday_sub, {
+    SynthDef(\cong_sub, {
       | out=0, freq=55, amp=0.5, pan=0, gate=1,
         attack=0.02, decay=0.3, sustain=0.8, release=0.6 |
 
@@ -216,7 +216,7 @@ Engine_SundayService : CroneEngine {
     }).add;
 
     // ── Lush Cathedral Reverb ────────────────────────────────
-    SynthDef(\sunday_reverb, {
+    SynthDef(\cong_reverb, {
       | in=0, out=0, mix=0.45, roomSize=0.9, damp=0.3 |
       var sig, wet;
       sig = In.ar(in, 2);
@@ -227,7 +227,7 @@ Engine_SundayService : CroneEngine {
     }).add;
 
     // ── Ping-Pong Delay ──────────────────────────────────────
-    SynthDef(\sunday_delay, {
+    SynthDef(\cong_delay, {
       | in=0, out=0, mix=0.15, delTime=0.375, feedback=0.35 |
       var sig, delayed;
       sig = In.ar(in, 2);
@@ -241,12 +241,12 @@ Engine_SundayService : CroneEngine {
 
     Crone.server.sync;
 
-    reverbSynth = Synth(\sunday_reverb,
+    reverbSynth = Synth(\cong_reverb,
       [\in, fxBus.index, \out, context.out_b.index,
        \mix, reverb_mix, \roomSize, 0.9, \damp, 0.3],
       target: fxGroup);
 
-    delaySynth = Synth(\sunday_delay,
+    delaySynth = Synth(\cong_delay,
       [\in, fxBus.index, \out, context.out_b.index,
        \mix, delay_mix, \delTime, delay_time, \feedback, delay_fb],
       target: fxGroup);
@@ -269,7 +269,7 @@ Engine_SundayService : CroneEngine {
       case
       { vtype == 4 } {
         // Lead voice
-        synth = Synth(\sunday_lead_voice, [
+        synth = Synth(\cong_lead_voice, [
           \out, fxBus.index,
           \freq, note.midicps,
           \amp, vel * gain_val * 0.8,
@@ -280,7 +280,7 @@ Engine_SundayService : CroneEngine {
       }
       { vtype == 5 } {
         // Sub bass
-        synth = Synth(\sunday_sub, [
+        synth = Synth(\cong_sub, [
           \out, fxBus.index,
           \freq, note.midicps,
           \amp, vel * gain_val * 0.7,
@@ -296,7 +296,7 @@ Engine_SundayService : CroneEngine {
           { vtype == 2 } { [\formant1, 600,  \formant2, 1800, \formant3, 2500] }  // tenor "ah"
           { vtype == 3 } { [\formant1, 500,  \formant2, 1400, \formant3, 2200] }; // bass "uh"
 
-        synth = Synth(\sunday_choir_voice, [
+        synth = Synth(\cong_choir_voice, [
           \out, fxBus.index,
           \freq, note.midicps,
           \amp, vel * gain_val * 0.5,
@@ -363,7 +363,7 @@ Engine_SundayService : CroneEngine {
       var vel = msg[2].asFloat;
       var key = (note * 10) + 4;
       voices[key] !? { |v| v.set(\gate, 0) };
-      voices[key] = Synth(\sunday_lead_voice, [
+      voices[key] = Synth(\cong_lead_voice, [
         \out, fxBus.index,
         \freq, note.midicps,
         \amp, vel * gain_val,

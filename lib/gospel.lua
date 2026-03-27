@@ -1,7 +1,7 @@
 -- gospel.lua
--- Sunday Service / Jesus Is King automation layer for HiChord
--- Gospel-hip-hop choir arrangements with SATB voicing,
--- call-and-response, intensity builds, and JIK-style progressions
+-- Congregation: choir automation layer for HiChord
+-- SATB voicing, generative call-and-response,
+-- intensity builds, and mood-driven progressions
 
 local gospel = {}
 
@@ -93,125 +93,164 @@ gospel.SCALES = {
 }
 
 ----------------------------------------------------------------------
--- JESUS IS KING PROGRESSION TEMPLATES
+-- CONGREGATION PROGRESSION TEMPLATES
 -- Each entry: list of {root_offset, chord_name, beats, intensity_hint}
 -- root_offset is semitones from the song key
+-- Blends gospel harmony with jazz, neo-soul, ambient, and chromatic movement
 ----------------------------------------------------------------------
-gospel.JIK_PROGRESSIONS = {
-  -- "Selah" style: epic, building, I-IV-V with extensions
-  selah = {
-    {0, "MAJ7",   4, 0.6},
-    {5, "MAJ9",   4, 0.7},
-    {7, "7SUS4",  2, 0.8},
-    {7, "DOM7",   2, 0.9},
-    {0, "ADD9",   4, 1.0},
-    {0, "MAJ7",   4, 0.5},
-    {5, "MAJ6/9", 4, 0.7},
-    {4, "MIN7",   2, 0.8},
-    {7, "DOM9",   2, 0.9},
-    {0, "MAJ7",   4, 1.0},
+gospel.PROGRESSIONS = {
+
+  -- ASCEND: epic build, gospel IV-V motion with chromatic passing chords
+  ascend = {
+    {0, "MAJ7",    4, 0.5},
+    {5, "MAJ9",    4, 0.6},
+    {6, "MIN7",    2, 0.7},  -- chromatic passing chord
+    {7, "7SUS4",   2, 0.8},
+    {7, "DOM9",    4, 0.9},
+    {0, "ADD9",    4, 1.0},
+    {3, "MAJ7",    2, 0.7},  -- mediant shift
+    {5, "MAJ6/9",  2, 0.8},
+    {4, "MIN9",    4, 0.7},
+    {7, "DOM7#9",  2, 0.9},
+    {0, "MAJ9",    2, 1.0},
   },
 
-  -- "God Is" style: gentle, soulful, ii-V-I with 9ths
-  god_is = {
-    {2, "MIN9",   4, 0.5},
-    {7, "DOM9",   4, 0.6},
-    {0, "MAJ9",   4, 0.7},
-    {0, "MAJ7",   4, 0.6},
-    {5, "MAJ7",   2, 0.7},
-    {4, "MIN7",   2, 0.6},
-    {2, "MIN9",   4, 0.5},
-    {7, "DOM7#9", 4, 0.8},
-    {0, "ADD9",   4, 0.7},
+  -- GLOW: warm, soulful, ii-V-I with neo-soul chromatic detours
+  glow = {
+    {2, "MIN9",    4, 0.5},
+    {7, "DOM9",    4, 0.6},
+    {0, "MAJ9",    4, 0.7},
+    {1, "DIM7",    2, 0.6},  -- chromatic neighbor
+    {2, "MIN7",    2, 0.5},
+    {5, "MAJ7",    4, 0.7},
+    {4, "MIN7",    2, 0.6},
+    {3, "MAJ7",    2, 0.7},  -- Coltrane-ish third relation
+    {2, "MIN9",    4, 0.5},
+    {7, "DOM7#9",  4, 0.8},
+    {0, "MAJ7#11", 4, 0.7},
   },
 
-  -- "Follow God" style: rhythmic, driving, hip-hop influenced
-  follow_god = {
-    {0, "MIN7",   2, 0.7},
-    {0, "MIN7",   2, 0.7},
-    {10,"DOM7",   2, 0.8},
-    {8, "MAJ",    2, 0.8},
-    {5, "MIN7",   2, 0.7},
-    {3, "MAJ7",   2, 0.8},
-    {0, "MIN7",   4, 0.9},
+  -- STRIDE: rhythmic, driving, hip-hop meets gospel with minor key grit
+  stride = {
+    {0, "MIN7",    2, 0.7},
+    {0, "MIN9",    2, 0.7},
+    {10,"DOM7",    2, 0.8},
+    {8, "MAJ7",    2, 0.8},
+    {5, "MIN7",    2, 0.7},
+    {3, "MAJ9",    2, 0.8},
+    {1, "DOM7",    2, 0.9},  -- tritone sub
+    {0, "MIN7",    2, 0.9},
   },
 
-  -- "Closed on Sunday" style: sparse, anthemic, building
-  closed_on_sunday = {
-    {0, "SUS4",   4, 0.3},
-    {0, "MAJ",    4, 0.5},
-    {5, "ADD9",   4, 0.6},
-    {7, "SUS4",   2, 0.7},
-    {7, "MAJ",    2, 0.8},
-    {0, "MAJ7",   4, 0.6},
-    {9, "MIN7",   4, 0.7},
-    {5, "MAJ9",   4, 0.8},
-    {7, "DOM7",   4, 0.9},
-    {0, "OCT",    4, 1.0},
+  -- STILL: sparse, ambient, suspensions that dissolve slowly
+  still = {
+    {0, "SUS2",    4, 0.2},
+    {0, "ADD9",    4, 0.3},
+    {5, "SUS4",    4, 0.4},
+    {5, "MAJ7#11", 4, 0.5},
+    {7, "SUS2",    4, 0.4},
+    {7, "ADD9",    4, 0.5},
+    {8, "MAJ7",    4, 0.6},  -- unexpected shift up
+    {0, "MAJ9",    8, 0.4},
   },
 
-  -- "Everything We Need" style: uplifting, full choir, major key gospel
-  everything_we_need = {
-    {0, "MAJ9",   4, 0.7},
-    {7, "DOM9",   4, 0.8},
-    {9, "MIN7",   2, 0.7},
-    {5, "MAJ7",   2, 0.8},
-    {0, "MAJ6/9", 4, 0.9},
-    {4, "MIN9",   4, 0.7},
-    {5, "MAJ9",   4, 0.8},
-    {7, "7SUS4",  2, 0.9},
-    {7, "DOM7",   2, 0.9},
-    {0, "MAJ9",   4, 1.0},
+  -- BLOOM: uplifting, full choir, major key with jazz extensions
+  bloom = {
+    {0, "MAJ9",    4, 0.7},
+    {7, "DOM9",    4, 0.8},
+    {9, "MIN7",    2, 0.7},
+    {5, "MAJ7",    2, 0.8},
+    {0, "MAJ6/9",  4, 0.9},
+    {4, "MIN9",    2, 0.7},
+    {3, "DOM7",    2, 0.8},  -- chromatic approach
+    {5, "MAJ9",    4, 0.8},
+    {6, "MIN7b5",  2, 0.9},  -- tension
+    {7, "DOM9",    2, 0.9},
+    {0, "MAJ9",    4, 1.0},
   },
 
-  -- "Water" style: flowing, ethereal, suspended harmonies
-  water = {
-    {0, "SUS2",   4, 0.4},
-    {0, "ADD9",   4, 0.5},
-    {5, "SUS4",   4, 0.5},
-    {5, "MAJ",    4, 0.6},
-    {7, "SUS2",   4, 0.5},
-    {7, "ADD9",   4, 0.7},
-    {0, "MAJ7#11",4, 0.8},
-    {0, "MAJ9",   4, 0.6},
+  -- DRIFT: flowing, ethereal, ambiguous tonality, suspensions and modes
+  drift = {
+    {0, "SUS2",    4, 0.3},
+    {2, "SUS4",    4, 0.4},
+    {5, "SUS2",    4, 0.4},
+    {4, "MAJ7#11", 4, 0.5},
+    {7, "SUS4",    4, 0.5},
+    {9, "ADD9",    4, 0.6},
+    {8, "MAJ7",    4, 0.7},
+    {0, "ADD9",    4, 0.5},
   },
 
-  -- "Jesus Is Lord" style: final hymn, simple & powerful, plagal cadence
-  jesus_is_lord = {
-    {0, "MAJ",    4, 0.5},
-    {5, "MAJ",    4, 0.7},
-    {0, "MAJ",    4, 0.6},
-    {5, "MAJ9",   4, 0.8},
-    {0, "MAJ7",   4, 0.7},
-    {7, "DOM7",   4, 0.9},
-    {5, "MAJ",    4, 0.9},
-    {0, "MAJ",    8, 1.0},
+  -- ALTAR: solemn, powerful, plagal cadence with weight
+  altar = {
+    {0, "MAJ",     4, 0.5},
+    {5, "MAJ",     4, 0.7},
+    {0, "MAJ7",    4, 0.6},
+    {5, "MAJ9",    2, 0.8},
+    {6, "DIM7",    2, 0.7},  -- diminished passing chord
+    {0, "MAJ7",    4, 0.7},
+    {8, "MAJ",     4, 0.8},  -- bVI — deceptive
+    {5, "MAJ9",    4, 0.9},
+    {7, "7SUS4",   2, 0.9},
+    {7, "DOM7",    2, 0.9},
+    {0, "MAJ",     4, 1.0},
   },
 
-  -- "Use This Gospel" style: saxophone-like, dramatic, dissonant beauty
-  use_this_gospel = {
+  -- FRACTURE: dramatic, dissonant beauty, angular movement
+  fracture = {
     {0, "MIN7",    4, 0.5},
     {3, "MAJ7",    4, 0.6},
     {5, "MIN7b5",  2, 0.7},
-    {5, "DOM7",    2, 0.7},
+    {6, "DOM7",    2, 0.7},  -- tritone away
     {8, "MAJ7",    4, 0.8},
-    {7, "DOM7#9",  4, 0.9},
+    {7, "DOM7#9",  2, 0.9},
+    {6, "MAJ7#11", 2, 0.9},  -- Lydian color
     {0, "MADD9",   4, 0.7},
-    {0, "MIN7",    4, 0.6},
+    {1, "MAJ7",    4, 0.8},  -- half-step shift
     {10,"DOM9",    4, 0.8},
     {0, "MAJ7#11", 4, 1.0},
   },
+
+  -- EMBER: slow burn, minor key, dorian/blues gospel fusion
+  ember = {
+    {0, "MIN7",    4, 0.4},
+    {0, "MIN9",    4, 0.5},
+    {5, "DOM7",    4, 0.6},
+    {3, "MAJ9",    4, 0.7},
+    {5, "MIN7",    4, 0.6},
+    {8, "MAJ7",    2, 0.7},
+    {7, "DOM9",    2, 0.8},
+    {0, "MIN7",    4, 0.5},
+    {10,"MAJ7",    4, 0.8},
+    {0, "MADD9",   4, 0.9},
+  },
+
+  -- CONVENE: call-to-gather, unison feel, open voicings expanding
+  convene = {
+    {0, "5",       4, 0.3},
+    {0, "SUS4",    4, 0.4},
+    {0, "MAJ",     4, 0.5},
+    {0, "MAJ7",    4, 0.6},
+    {5, "ADD9",    4, 0.7},
+    {7, "MAJ9",    4, 0.8},
+    {5, "MAJ7",    2, 0.9},
+    {7, "DOM9",    2, 0.9},
+    {0, "MAJ9",    4, 1.0},
+  },
 }
+
+-- Backward compat alias
+gospel.JIK_PROGRESSIONS = gospel.PROGRESSIONS
 
 -- Progression names for display/selection
 gospel.PROGRESSION_NAMES = {}
-for name, _ in pairs(gospel.JIK_PROGRESSIONS) do
+for name, _ in pairs(gospel.PROGRESSIONS) do
   table.insert(gospel.PROGRESSION_NAMES, name)
 end
 table.sort(gospel.PROGRESSION_NAMES)
 
 ----------------------------------------------------------------------
--- GOSPEL KEYS (common keys for gospel music: Eb, Ab, Bb, C, F, Db)
+-- CONGREGATION KEYS (warm keys: Eb, Ab, Bb, C, F, Db)
 ----------------------------------------------------------------------
 gospel.GOSPEL_KEYS = {
   {name="C",  root=1},
@@ -387,36 +426,57 @@ end
 
 ----------------------------------------------------------------------
 -- CALL AND RESPONSE PATTERNS
--- Defines which voices call and which respond
+-- Generative/algorithmic: beat lengths vary with intensity,
+-- voice groups shift based on progression step
 ----------------------------------------------------------------------
 gospel.CALL_RESPONSE = {
-  -- Lead calls, full choir responds
-  lead_choir = {
+  -- solo/chorus: lead alone, then full choir answers
+  solo_chorus = {
     call   = {gospel.VOICE.LEAD},
     respond = {gospel.VOICE.SOPRANO, gospel.VOICE.ALTO, gospel.VOICE.TENOR, gospel.VOICE.BASS},
     call_beats = 2,
     response_beats = 2,
+    adaptive = true,  -- beat lengths scale with intensity
   },
-  -- Soprano calls, lower voices respond
-  high_low = {
-    call   = {gospel.VOICE.SOPRANO, gospel.VOICE.LEAD},
-    respond = {gospel.VOICE.ALTO, gospel.VOICE.TENOR, gospel.VOICE.BASS},
-    call_beats = 2,
-    response_beats = 2,
+  -- cascade: voices enter one at a time, top down
+  cascade = {
+    call   = {gospel.VOICE.SOPRANO},
+    respond = {gospel.VOICE.SOPRANO, gospel.VOICE.ALTO, gospel.VOICE.TENOR, gospel.VOICE.BASS, gospel.VOICE.LEAD},
+    call_beats = 1,
+    response_beats = 3,
+    adaptive = true,
   },
-  -- Unison build: everyone together, growing
-  unison_build = {
+  -- converge: low voices call, all voices answer in unison
+  converge = {
     call   = {gospel.VOICE.BASS, gospel.VOICE.TENOR},
     respond = {gospel.VOICE.SOPRANO, gospel.VOICE.ALTO, gospel.VOICE.TENOR, gospel.VOICE.BASS, gospel.VOICE.LEAD},
     call_beats = 4,
     response_beats = 4,
+    adaptive = false,
   },
-  -- Antiphonal: left vs right (alto+bass vs soprano+tenor)
-  antiphonal = {
+  -- scatter: stereo antiphonal, left vs right voices alternate rapidly
+  scatter = {
     call   = {gospel.VOICE.ALTO, gospel.VOICE.BASS},
     respond = {gospel.VOICE.SOPRANO, gospel.VOICE.TENOR},
     call_beats = 1,
     response_beats = 1,
+    adaptive = true,
+  },
+  -- breathe: all voices together, no call/response (bypass)
+  breathe = {
+    call   = {gospel.VOICE.SOPRANO, gospel.VOICE.ALTO, gospel.VOICE.TENOR, gospel.VOICE.BASS, gospel.VOICE.LEAD},
+    respond = {gospel.VOICE.SOPRANO, gospel.VOICE.ALTO, gospel.VOICE.TENOR, gospel.VOICE.BASS, gospel.VOICE.LEAD},
+    call_beats = 4,
+    response_beats = 4,
+    adaptive = false,
+  },
+  -- murmur: random voice subset calls, complement responds
+  murmur = {
+    call   = {gospel.VOICE.ALTO, gospel.VOICE.LEAD},
+    respond = {gospel.VOICE.SOPRANO, gospel.VOICE.BASS, gospel.VOICE.TENOR},
+    call_beats = 3,
+    response_beats = 1,
+    adaptive = true,
   },
 }
 
@@ -427,20 +487,20 @@ end
 table.sort(gospel.CALL_RESPONSE_NAMES)
 
 ----------------------------------------------------------------------
--- SUNDAY SERVICE AUTOMATION STATE
+-- CONGREGATION AUTOMATION STATE
 ----------------------------------------------------------------------
 function gospel.new_state()
   return {
     active = false,
-    key_root = 4,          -- Eb (gospel key)
+    key_root = 4,          -- Eb
     base_octave = 4,
-    progression_name = "selah",
+    progression_name = "ascend",
     progression_step = 1,
     intensity = 0.5,
     target_intensity = 0.5,
     intensity_ramp_speed = 0.02,  -- how fast intensity changes per tick
 
-    call_response_mode = "lead_choir",
+    call_response_mode = "solo_chorus",
     call_response_phase = "call",  -- "call" or "respond"
     call_response_beat = 0,
 
@@ -619,11 +679,20 @@ function gospel.tick(gstate)
       gstate.intensity - gstate.intensity_ramp_speed)
   end
 
-  -- Advance call/response phase
+  -- Advance call/response phase (adaptive: beat lengths scale with intensity)
   local cr = gospel.CALL_RESPONSE[gstate.call_response_mode]
   if cr then
     gstate.call_response_beat = gstate.call_response_beat + 1
-    local phase_len = (gstate.call_response_phase == "call") and cr.call_beats or cr.response_beats
+    local call_len = cr.call_beats
+    local resp_len = cr.response_beats
+    if cr.adaptive then
+      -- At low intensity: longer calls, shorter responses (more space)
+      -- At high intensity: shorter calls, longer responses (fuller choir)
+      local scale = gstate.intensity
+      call_len = math.max(1, math.floor(cr.call_beats * (1.5 - scale)))
+      resp_len = math.max(1, math.floor(cr.response_beats * (0.5 + scale)))
+    end
+    local phase_len = (gstate.call_response_phase == "call") and call_len or resp_len
     if gstate.call_response_beat >= phase_len then
       gstate.call_response_beat = 0
       gstate.call_response_phase = (gstate.call_response_phase == "call") and "respond" or "call"

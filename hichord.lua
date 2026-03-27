@@ -1,13 +1,13 @@
--- hichord.lua  v5.0 — Sunday Service + Drums Edition
+-- hichord.lua  v5.0 — Congregation + Drums Edition
 -- Norns port of HiChord (hichord.shop) firmware 2.6.9
 -- Grid = physical HiChord device replica (16×8)
 -- Norns screen Page A = traditional param/menu display
 -- Norns screen Page B = animated HiChord OLED replica
--- Page C = SUNDAY SERVICE gospel-hip-hop automation
+-- Page C = CONGREGATION gospel-hip-hop automation
 -- Page D = DRUMS humanized sequencer
 -- OP-XY MIDI: strum timing mapped to CC 20 (attack)
 
-engine.name = "SundayService"
+engine.name = "Congregation"
 
 local ControlSpec = require "controlspec"
 local tab = require "tabutil"
@@ -99,7 +99,7 @@ local state = {
   
   engine_notes = {},
 
-  -- Sunday Service gospel automation
+  -- Congregation gospel automation
   gospel_mode = false,     -- true = Page C active, gospel engine running
   gospel_state = nil,      -- initialized in init()
   gospel_clock_id = nil,
@@ -288,7 +288,7 @@ local function all_notes_off()
 end
 
 ----------------------------------------------------------------------
--- SUNDAY SERVICE: gospel voice playback via engine + MIDI
+-- CONGREGATION: gospel voice playback via engine + MIDI
 ----------------------------------------------------------------------
 local function gospel_voice_on(note, voice_type, vel)
   -- Use SundayService engine voiceOn: note, velocity, voiceType, pan
@@ -323,7 +323,7 @@ local function gospel_all_off()
   all_notes_off()
 end
 
--- Start the Sunday Service automation clock
+-- Start the Congregation automation clock
 local function gospel_start()
   if state.gospel_clock_id then return end
   state.gospel_mode = true
@@ -404,7 +404,7 @@ local function grid_redraw()
   g:led(1, 6, state.strum_time > 0 and 10 or 2)
   g:led(2, 6, 2)
 
-  -- Row 7: Sunday Service controls
+  -- Row 7: Congregation controls
   -- col 1 = gospel start/stop, col 2 = build, col 3-10 = progression select
   -- col 11-12 = call/response mode
   g:led(1, 7, state.gospel_mode and 15 or 4)
@@ -445,13 +445,13 @@ function redraw()
   screen.aa(0)
   
   if state.gospel_page then
-    -- PAGE C: SUNDAY SERVICE gospel automation display
+    -- PAGE C: CONGREGATION gospel automation display
     local gs = state.gospel_state
 
     -- Header
     screen.level(15)
     screen.move(0, 8)
-    screen.text("SUNDAY SERVICE")
+    screen.text("CONGREGATION")
     screen.level(gs.active and 15 or 4)
     screen.move(100, 8)
     screen.text(gs.active and "LIVE" or "STOP")
@@ -785,7 +785,7 @@ function key(n, z)
   redraw()
 end
 
-local PAGE_NAMES = {"A: PARAMS", "B: OLED", "C: SUNDAY SERVICE", "D: DRUMS"}
+local PAGE_NAMES = {"A: PARAMS", "B: OLED", "C: CONGREGATION", "D: DRUMS"}
 local current_page_idx = 1  -- 1=A, 2=B, 3=C(gospel), 4=D(drums)
 
 local function set_page(idx)
@@ -897,7 +897,7 @@ function g.key(x, y, z)
       state.grid_buttons_held = math.max(0, state.grid_buttons_held - 1)
     end
   elseif y == 7 and z == 1 then
-    -- Sunday Service row
+    -- Congregation row
     local gs = state.gospel_state
     if x == 1 then
       -- Start/stop gospel automation
@@ -988,7 +988,7 @@ function init()
     )
   end
 
-  -- Initialize Sunday Service gospel automation
+  -- Initialize Congregation gospel automation
   state.gospel_state = gospel.new_state()
 
   params:add_separator("OP-XY")
@@ -1017,8 +1017,8 @@ function init()
     state.velocity_base = val
   end)
 
-  -- Sunday Service parameters
-  params:add_separator("SUNDAY SERVICE")
+  -- Congregation parameters
+  params:add_separator("CONGREGATION")
 
   params:add_option("gospel_progression", "Progression",
     gospel.PROGRESSION_NAMES, 1)
@@ -1028,7 +1028,7 @@ function init()
     state.gospel_state.beat_counter = 0
   end)
 
-  params:add_option("gospel_key", "Gospel Key",
+  params:add_option("gospel_key", "Key",
     {"C", "Db", "Eb", "F", "Ab", "Bb"}, 3)
   params:set_action("gospel_key", function(val)
     state.gospel_state.key_root = gospel.GOSPEL_KEYS[val].root
