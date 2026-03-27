@@ -542,37 +542,37 @@ function redraw()
     screen.text(drums.get_preset_name())
 
     if pattern_data then
-      local voices = {"kick", "snare", "hat", "perc"}
-      local labels = {"K", "S", "H", "P"}
-      local row_y = 14
-      for v = 1, 4 do
-        local y = row_y + (v - 1) * 12
+      local voices = {"kick", "snare", "hat", "hat2", "perc"}
+      local labels = {"K", "S", "H", "H2", "P"}
+      local row_y = 12
+      for v = 1, 5 do
+        local y = row_y + (v - 1) * 10
         local pat = pattern_data[voices[v]]
         local vel = pattern_data[voices[v] .. "_vel"]
         local muted = drums.is_muted(v)
         screen.level(muted and 2 or 8)
-        screen.move(0, y + 8)
+        screen.move(0, y + 7)
         screen.text(labels[v])
         for s = 1, 16 do
-          local x = 10 + (s - 1) * 7
+          local x = 12 + (s - 1) * 7
           local is_current = (s == step and running)
           if pat[s] == 1 then
             local v_level = math.floor((vel[s] / 127) * 12) + 3
             if muted then v_level = 2 end
             screen.level(is_current and 15 or v_level)
-            screen.rect(x, y, 6, 9)
+            screen.rect(x, y, 6, 8)
             screen.fill()
             if vel[s] < 50 and not muted then
               screen.level(0)
-              screen.rect(x + 1, y + 1, 4, 7)
+              screen.rect(x + 1, y + 1, 4, 6)
               screen.fill()
               screen.level(is_current and 15 or v_level)
-              screen.rect(x + 2, y + 3, 2, 3)
+              screen.rect(x + 2, y + 2, 2, 4)
               screen.fill()
             end
           else
             screen.level(is_current and 6 or 1)
-            screen.rect(x, y, 6, 9)
+            screen.rect(x, y, 6, 8)
             screen.stroke()
           end
         end
