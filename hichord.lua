@@ -107,6 +107,7 @@ local state = {
 
   -- Drums
   drums_page = false,      -- show drums display (Page D)
+  drums_param_idx = 1,     -- 1=GRV, 2=GHO, 3=FEL, 4=JIT
 }
 
 local NOTES = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"}
@@ -579,13 +580,17 @@ function redraw()
       end
     end
 
-    screen.level(5)
+    local pi = state.drums_param_idx
+    screen.level(pi == 1 and 15 or 4)
     screen.move(0, 62)
     screen.text("GRV:" .. drums.get_humanize())
+    screen.level(pi == 2 and 15 or 4)
     screen.move(35, 62)
     screen.text("GHO:" .. drums.get_ghost_density())
+    screen.level(pi == 3 and 15 or 4)
     screen.move(72, 62)
     screen.text("FEL:" .. drums.get_feel())
+    screen.level(pi == 4 and 15 or 4)
     screen.move(104, 62)
     screen.text("JIT:" .. drums.get_jitter())
 
@@ -767,7 +772,11 @@ function key(n, z)
         gospel.trigger_build(state.gospel_state, 1.0, 0.05)
       end
     elseif state.drums_page then
-      drums.next_preset()
+      local param_names = {"GROOVE", "GHOST", "FEEL", "JITTER"}
+      state.drums_param_idx = (state.drums_param_idx % 4) + 1
+      state.popup_param = "E3 CONTROLS"
+      state.popup_val = param_names[state.drums_param_idx]
+      state.popup_time = 10
     else
       state.octave = math.min(7, state.octave + 1)
     end
@@ -795,7 +804,7 @@ function enc(n, d)
     state.popup_val = PAGE_NAMES[current_page_idx]
     state.popup_time = 10
   elseif state.drums_page then
-    -- Drums page: E2/E3
+    -- Drums page: E2=preset, E3=adjust selected param
     if n == 2 then
       local idx = drums.get_preset_idx() + d
       local num = #drums.PRESET_ORDER
@@ -805,9 +814,24 @@ function enc(n, d)
       state.popup_val = drums.get_preset_name()
       state.popup_time = 8
     elseif n == 3 then
-      drums.set_humanize(drums.get_humanize() + d)
-      state.popup_param = "GROOVE AMT"
-      state.popup_val = drums.get_humanize() .. "%"
+      local pi = state.drums_param_idx
+      if pi == 1 then
+        drums.set_humanize(drums.get_humanize() + d)
+        state.popup_param = "GROOVE AMT"
+        state.popup_val = drums.get_humanize() .. "%"
+      elseif pi == 2 then
+        drums.set_ghost_density(drums.get_ghost_density() + d)
+        state.popup_param = "GHOST DENSITY"
+        state.popup_val = drums.get_ghost_density() .. "%"
+      elseif pi == 3 then
+        drums.set_feel(drums.get_feel() + d)
+        state.popup_param = "VELOCITY FEEL"
+        state.popup_val = drums.get_feel() .. "%"
+      elseif pi == 4 then
+        drums.set_jitter(drums.get_jitter() + d)
+        state.popup_param = "TIMING JITTER"
+        state.popup_val = drums.get_jitter() .. "%"
+      end
       state.popup_time = 8
     end
   elseif state.gospel_page then
