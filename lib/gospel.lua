@@ -102,140 +102,140 @@ gospel.PROGRESSIONS = {
 
   -- ASCEND: epic build, gospel IV-V motion with chromatic passing chords
   ascend = {
-    {0, "MAJ7",    4, 0.5},
-    {5, "MAJ9",    4, 0.6},
-    {6, "MIN7",    2, 0.7},  -- chromatic passing chord
-    {7, "7SUS4",   2, 0.8},
-    {7, "DOM9",    4, 0.9},
-    {0, "ADD9",    4, 1.0},
-    {3, "MAJ7",    2, 0.7},  -- mediant shift
-    {5, "MAJ6/9",  2, 0.8},
-    {4, "MIN9",    4, 0.7},
-    {7, "DOM7#9",  2, 0.9},
-    {0, "MAJ9",    2, 1.0},
+    {0, "MAJ7",    8, 0.5},
+    {5, "MAJ9",    8, 0.6},
+    {6, "MIN7",    4, 0.7},  -- chromatic passing chord
+    {7, "7SUS4",   4, 0.8},
+    {7, "DOM9",    8, 0.9},
+    {0, "ADD9",    8, 1.0},
+    {3, "MAJ7",    4, 0.7},  -- mediant shift
+    {5, "MAJ6/9",  4, 0.8},
+    {4, "MIN9",    8, 0.7},
+    {7, "DOM7#9",  4, 0.9},
+    {0, "MAJ9",    4, 1.0},
   },
 
   -- GLOW: warm, soulful, ii-V-I with neo-soul chromatic detours
   glow = {
-    {2, "MIN9",    4, 0.5},
-    {7, "DOM9",    4, 0.6},
-    {0, "MAJ9",    4, 0.7},
-    {1, "DIM7",    2, 0.6},  -- chromatic neighbor
-    {2, "MIN7",    2, 0.5},
-    {5, "MAJ7",    4, 0.7},
-    {4, "MIN7",    2, 0.6},
-    {3, "MAJ7",    2, 0.7},  -- Coltrane-ish third relation
-    {2, "MIN9",    4, 0.5},
-    {7, "DOM7#9",  4, 0.8},
-    {0, "MAJ7#11", 4, 0.7},
+    {2, "MIN9",    8, 0.5},
+    {7, "DOM9",    8, 0.6},
+    {0, "MAJ9",    8, 0.7},
+    {1, "DIM7",    4, 0.6},  -- chromatic neighbor
+    {2, "MIN7",    4, 0.5},
+    {5, "MAJ7",    8, 0.7},
+    {4, "MIN7",    4, 0.6},
+    {3, "MAJ7",    4, 0.7},  -- Coltrane-ish third relation
+    {2, "MIN9",    8, 0.5},
+    {7, "DOM7#9",  8, 0.8},
+    {0, "MAJ7#11", 8, 0.7},
   },
 
   -- STRIDE: rhythmic, driving, hip-hop meets gospel with minor key grit
   stride = {
-    {0, "MIN7",    2, 0.7},
-    {0, "MIN9",    2, 0.7},
-    {10,"DOM7",    2, 0.8},
-    {8, "MAJ7",    2, 0.8},
-    {5, "MIN7",    2, 0.7},
-    {3, "MAJ9",    2, 0.8},
-    {1, "DOM7",    2, 0.9},  -- tritone sub
-    {0, "MIN7",    2, 0.9},
+    {0, "MIN7",    4, 0.7},
+    {0, "MIN9",    4, 0.7},
+    {10,"DOM7",    4, 0.8},
+    {8, "MAJ7",    4, 0.8},
+    {5, "MIN7",    4, 0.7},
+    {3, "MAJ9",    4, 0.8},
+    {1, "DOM7",    4, 0.9},  -- tritone sub
+    {0, "MIN7",    4, 0.9},
   },
 
   -- STILL: sparse, ambient, suspensions that dissolve slowly
   still = {
-    {0, "SUS2",    4, 0.2},
-    {0, "ADD9",    4, 0.3},
-    {5, "SUS4",    4, 0.4},
-    {5, "MAJ7#11", 4, 0.5},
-    {7, "SUS2",    4, 0.4},
-    {7, "ADD9",    4, 0.5},
-    {8, "MAJ7",    4, 0.6},  -- unexpected shift up
-    {0, "MAJ9",    8, 0.4},
+    {0, "SUS2",    8, 0.2},
+    {0, "ADD9",    8, 0.3},
+    {5, "SUS4",    8, 0.4},
+    {5, "MAJ7#11", 8, 0.5},
+    {7, "SUS2",    8, 0.4},
+    {7, "ADD9",    8, 0.5},
+    {8, "MAJ7",    8, 0.6},  -- unexpected shift up
+    {0, "MAJ9",    16, 0.4},
   },
 
   -- BLOOM: uplifting, full choir, major key with jazz extensions
   bloom = {
-    {0, "MAJ9",    4, 0.7},
-    {7, "DOM9",    4, 0.8},
-    {9, "MIN7",    2, 0.7},
-    {5, "MAJ7",    2, 0.8},
-    {0, "MAJ6/9",  4, 0.9},
-    {4, "MIN9",    2, 0.7},
-    {3, "DOM7",    2, 0.8},  -- chromatic approach
-    {5, "MAJ9",    4, 0.8},
-    {6, "MIN7b5",  2, 0.9},  -- tension
-    {7, "DOM9",    2, 0.9},
-    {0, "MAJ9",    4, 1.0},
+    {0, "MAJ9",    8, 0.7},
+    {7, "DOM9",    8, 0.8},
+    {9, "MIN7",    4, 0.7},
+    {5, "MAJ7",    4, 0.8},
+    {0, "MAJ6/9",  8, 0.9},
+    {4, "MIN9",    4, 0.7},
+    {3, "DOM7",    4, 0.8},  -- chromatic approach
+    {5, "MAJ9",    8, 0.8},
+    {6, "MIN7b5",  4, 0.9},  -- tension
+    {7, "DOM9",    4, 0.9},
+    {0, "MAJ9",    8, 1.0},
   },
 
   -- DRIFT: flowing, ethereal, ambiguous tonality, suspensions and modes
   drift = {
-    {0, "SUS2",    4, 0.3},
-    {2, "SUS4",    4, 0.4},
-    {5, "SUS2",    4, 0.4},
-    {4, "MAJ7#11", 4, 0.5},
-    {7, "SUS4",    4, 0.5},
-    {9, "ADD9",    4, 0.6},
-    {8, "MAJ7",    4, 0.7},
-    {0, "ADD9",    4, 0.5},
+    {0, "SUS2",    8, 0.3},
+    {2, "SUS4",    8, 0.4},
+    {5, "SUS2",    8, 0.4},
+    {4, "MAJ7#11", 8, 0.5},
+    {7, "SUS4",    8, 0.5},
+    {9, "ADD9",    8, 0.6},
+    {8, "MAJ7",    8, 0.7},
+    {0, "ADD9",    8, 0.5},
   },
 
   -- ALTAR: solemn, powerful, plagal cadence with weight
   altar = {
-    {0, "MAJ",     4, 0.5},
-    {5, "MAJ",     4, 0.7},
-    {0, "MAJ7",    4, 0.6},
-    {5, "MAJ9",    2, 0.8},
-    {6, "DIM7",    2, 0.7},  -- diminished passing chord
-    {0, "MAJ7",    4, 0.7},
-    {8, "MAJ",     4, 0.8},  -- bVI — deceptive
-    {5, "MAJ9",    4, 0.9},
-    {7, "7SUS4",   2, 0.9},
-    {7, "DOM7",    2, 0.9},
-    {0, "MAJ",     4, 1.0},
+    {0, "MAJ",     8, 0.5},
+    {5, "MAJ",     8, 0.7},
+    {0, "MAJ7",    8, 0.6},
+    {5, "MAJ9",    4, 0.8},
+    {6, "DIM7",    4, 0.7},  -- diminished passing chord
+    {0, "MAJ7",    8, 0.7},
+    {8, "MAJ",     8, 0.8},  -- bVI — deceptive
+    {5, "MAJ9",    8, 0.9},
+    {7, "7SUS4",   4, 0.9},
+    {7, "DOM7",    4, 0.9},
+    {0, "MAJ",     8, 1.0},
   },
 
   -- FRACTURE: dramatic, dissonant beauty, angular movement
   fracture = {
-    {0, "MIN7",    4, 0.5},
-    {3, "MAJ7",    4, 0.6},
-    {5, "MIN7b5",  2, 0.7},
-    {6, "DOM7",    2, 0.7},  -- tritone away
-    {8, "MAJ7",    4, 0.8},
-    {7, "DOM7#9",  2, 0.9},
-    {6, "MAJ7#11", 2, 0.9},  -- Lydian color
-    {0, "MADD9",   4, 0.7},
-    {1, "MAJ7",    4, 0.8},  -- half-step shift
-    {10,"DOM9",    4, 0.8},
-    {0, "MAJ7#11", 4, 1.0},
+    {0, "MIN7",    8, 0.5},
+    {3, "MAJ7",    8, 0.6},
+    {5, "MIN7b5",  4, 0.7},
+    {6, "DOM7",    4, 0.7},  -- tritone away
+    {8, "MAJ7",    8, 0.8},
+    {7, "DOM7#9",  4, 0.9},
+    {6, "MAJ7#11", 4, 0.9},  -- Lydian color
+    {0, "MADD9",   8, 0.7},
+    {1, "MAJ7",    8, 0.8},  -- half-step shift
+    {10,"DOM9",    8, 0.8},
+    {0, "MAJ7#11", 8, 1.0},
   },
 
   -- EMBER: slow burn, minor key, dorian/blues gospel fusion
   ember = {
-    {0, "MIN7",    4, 0.4},
-    {0, "MIN9",    4, 0.5},
-    {5, "DOM7",    4, 0.6},
-    {3, "MAJ9",    4, 0.7},
-    {5, "MIN7",    4, 0.6},
-    {8, "MAJ7",    2, 0.7},
-    {7, "DOM9",    2, 0.8},
-    {0, "MIN7",    4, 0.5},
-    {10,"MAJ7",    4, 0.8},
-    {0, "MADD9",   4, 0.9},
+    {0, "MIN7",    8, 0.4},
+    {0, "MIN9",    8, 0.5},
+    {5, "DOM7",    8, 0.6},
+    {3, "MAJ9",    8, 0.7},
+    {5, "MIN7",    8, 0.6},
+    {8, "MAJ7",    4, 0.7},
+    {7, "DOM9",    4, 0.8},
+    {0, "MIN7",    8, 0.5},
+    {10,"MAJ7",    8, 0.8},
+    {0, "MADD9",   8, 0.9},
   },
 
   -- CONVENE: call-to-gather, unison feel, open voicings expanding
   convene = {
-    {0, "5",       4, 0.3},
-    {0, "SUS4",    4, 0.4},
-    {0, "MAJ",     4, 0.5},
-    {0, "MAJ7",    4, 0.6},
-    {5, "ADD9",    4, 0.7},
-    {7, "MAJ9",    4, 0.8},
-    {5, "MAJ7",    2, 0.9},
-    {7, "DOM9",    2, 0.9},
-    {0, "MAJ9",    4, 1.0},
+    {0, "5",       8, 0.3},
+    {0, "SUS4",    8, 0.4},
+    {0, "MAJ",     8, 0.5},
+    {0, "MAJ7",    8, 0.6},
+    {5, "ADD9",    8, 0.7},
+    {7, "MAJ9",    8, 0.8},
+    {5, "MAJ7",    4, 0.9},
+    {7, "DOM9",    4, 0.9},
+    {0, "MAJ9",    8, 1.0},
   },
 }
 
