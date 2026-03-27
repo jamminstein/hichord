@@ -1,20 +1,18 @@
-** WARNING: connection is not using a post-quantum key exchange algorithm.
-** This session may be vulnerable to "store now, decrypt later" attacks.
-** The server may need to be upgraded. See https://openssh.com/pq.html
--- hichord.lua  v4.0 — Sunday Service Edition
+-- hichord.lua  v5.0 — Sunday Service + Drums Edition
 -- Norns port of HiChord (hichord.shop) firmware 2.6.9
 -- Grid = physical HiChord device replica (16×8)
 -- Norns screen Page A = traditional param/menu display
 -- Norns screen Page B = animated HiChord OLED replica
 -- Page C = SUNDAY SERVICE gospel-hip-hop automation
+-- Page D = DRUMS humanized sequencer
 -- OP-XY MIDI: strum timing mapped to CC 20 (attack)
 
-engine.name = "MollyThePoly"
-local MollyThePoly = require "molly_the_poly/lib/molly_the_poly_engine"
+engine.name = "SundayService"
 
 local ControlSpec = require "controlspec"
 local tab = require "tabutil"
 local gospel = require "hichord/lib/gospel"
+local drums = require "hichord/lib/drums"
 
 -- OP-XY MIDI helpers
 local opxy_out = nil
@@ -37,10 +35,6 @@ end
 local g = grid.connect()
 local midi_out = nil
 local screen_clock_id = nil
-
-local function midi_to_hz(note)
-  return 440 * 2^((note - 69) / 12)
-end
 
 local state = {
   -- chord & voicing
@@ -104,13 +98,15 @@ local state = {
   grid_buttons_held = 0,
   
   engine_notes = {},
-  next_engine_id = 1,
 
   -- Sunday Service gospel automation
   gospel_mode = false,     -- true = Page C active, gospel engine running
   gospel_state = nil,      -- initialized in init()
   gospel_clock_id = nil,
   gospel_page = false,     -- show gospel display (Page C)
+
+  -- Drums
+  drums_page = false,      -- show drums display (Page D)
 }
 
 local NOTES = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"}
@@ -195,19 +191,16 @@ local function play_chord_with_strum(notes, velocity)
   if state.strum_delay <= 0 then
     for _, n in ipairs(play_notes) do
       local vel = get_velocity(base_vel)
-      local freq = midi_to_hz(n)
-      local engine_id = state.next_engine_id
-      engine.noteOn(engine_id, freq, vel / 127)
-      state.engine_notes[n] = engine_id
-      state.next_engine_id = state.next_engine_id + 1
-      
+      engine.noteOn(n, vel / 127)
+      state.engine_notes[n] = true
+
       if midi_out then
         pcall(function() midi_out:note_on(n, vel, state.midi_channel) end)
       end
       opxy_note_on(n, vel)
-      
+
       if state.sustain_held then
-        state.sustained_notes[n] = engine_id
+        state.sustained_notes[n] = true
       end
     end
     -- Map strum timing to CC 20 (attack): no strum = fast attack
@@ -221,19 +214,16 @@ local function play_chord_with_strum(notes, velocity)
     clock.run(function()
       for idx, n in ipairs(play_notes) do
         local vel = get_velocity(base_vel)
-        local freq = midi_to_hz(n)
-        local engine_id = state.next_engine_id
-        engine.noteOn(engine_id, freq, vel / 127)
-        state.engine_notes[n] = engine_id
-        state.next_engine_id = state.next_engine_id + 1
-        
+        engine.noteOn(n, vel / 127)
+        state.engine_notes[n] = true
+
         if midi_out then
           pcall(function() midi_out:note_on(n, vel, state.midi_channel) end)
         end
         opxy_note_on(n, vel)
-        
+
         if state.sustain_held then
-          state.sustained_notes[n] = engine_id
+          state.sustained_notes[n] = true
         end
         if idx < num_notes then
           clock.sleep(delay_sec)
@@ -300,12 +290,10 @@ end
 -- SUNDAY SERVICE: gospel voice playback via engine + MIDI
 ----------------------------------------------------------------------
 local function gospel_voice_on(note, voice_type, vel)
-  -- Use the standard engine (MollyThePoly) with voice-appropriate settings
-  local freq = midi_to_hz(note)
-  local engine_id = state.next_engine_id
-  engine.noteOn(engine_id, freq, vel)
-  state.engine_notes[note * 10 + voice_type] = engine_id
-  state.next_engine_id = state.next_engine_id + 1
+  -- Use SundayService engine voiceOn: note, velocity, voiceType, pan
+  local pan = gospel.VOICE_PAN[voice_type] or 0
+  engine.voiceOn(note, vel, voice_type, pan)
+  state.engine_notes[note * 10 + voice_type] = true
 
   -- Also send MIDI with voice-type-specific channel offsets
   if midi_out then
@@ -317,9 +305,8 @@ end
 
 local function gospel_voice_off(note, voice_type)
   local key = note * 10 + voice_type
-  local engine_id = state.engine_notes[key]
-  if engine_id then
-    engine.noteOff(engine_id)
+  if state.engine_notes[key] then
+    engine.voiceOff(note, voice_type)
     state.engine_notes[key] = nil
   end
   if midi_out then
@@ -330,9 +317,7 @@ local function gospel_voice_off(note, voice_type)
 end
 
 local function gospel_all_off()
-  for key, engine_id in pairs(state.engine_notes) do
-    engine.noteOff(engine_id)
-  end
+  engine.allVoicesOff()
   state.engine_notes = {}
   all_notes_off()
 end
@@ -540,10 +525,74 @@ function redraw()
     screen.circle(124, 4, 2)
     screen.fill()
 
+  elseif state.drums_page then
+    -- PAGE D: DRUMS humanized sequencer
+    local pattern_data = drums.get_pattern_display()
+    local step = drums.get_step()
+    local running = drums.is_running()
+
+    screen.level(15)
+    screen.move(0, 8)
+    screen.text("DRUMS")
+    screen.level(running and 15 or 4)
+    screen.move(36, 8)
+    screen.text(running and "PLAY" or "STOP")
+    screen.level(10)
+    screen.move(64, 8)
+    screen.text(drums.get_preset_name())
+
+    if pattern_data then
+      local voices = {"kick", "snare", "hat", "perc"}
+      local labels = {"K", "S", "H", "P"}
+      local row_y = 14
+      for v = 1, 4 do
+        local y = row_y + (v - 1) * 12
+        local pat = pattern_data[voices[v]]
+        local vel = pattern_data[voices[v] .. "_vel"]
+        local muted = drums.is_muted(v)
+        screen.level(muted and 2 or 8)
+        screen.move(0, y + 8)
+        screen.text(labels[v])
+        for s = 1, 16 do
+          local x = 10 + (s - 1) * 7
+          local is_current = (s == step and running)
+          if pat[s] == 1 then
+            local v_level = math.floor((vel[s] / 127) * 12) + 3
+            if muted then v_level = 2 end
+            screen.level(is_current and 15 or v_level)
+            screen.rect(x, y, 6, 9)
+            screen.fill()
+            if vel[s] < 50 and not muted then
+              screen.level(0)
+              screen.rect(x + 1, y + 1, 4, 7)
+              screen.fill()
+              screen.level(is_current and 15 or v_level)
+              screen.rect(x + 2, y + 3, 2, 3)
+              screen.fill()
+            end
+          else
+            screen.level(is_current and 6 or 1)
+            screen.rect(x, y, 6, 9)
+            screen.stroke()
+          end
+        end
+      end
+    end
+
+    screen.level(5)
+    screen.move(0, 62)
+    screen.text("GRV:" .. drums.get_humanize())
+    screen.move(35, 62)
+    screen.text("GHO:" .. drums.get_ghost_density())
+    screen.move(72, 62)
+    screen.text("FEL:" .. drums.get_feel())
+    screen.move(104, 62)
+    screen.text("JIT:" .. drums.get_jitter())
+
   elseif state.page_a then
     screen.level(15)
     screen.move(0, 10)
-    screen.text("HICHORD v4.0")
+    screen.text("HICHORD v5.0")
     
     screen.level(8)
     screen.move(0, 22)
@@ -704,23 +753,21 @@ end
 function key(n, z)
   if n == 2 and z == 1 then
     if state.gospel_page then
-      -- In gospel mode: K2 = start/stop automation
-      if state.gospel_mode then
-        gospel_stop()
-      else
-        gospel_start()
-      end
+      if state.gospel_mode then gospel_stop() else gospel_start() end
+    elseif state.drums_page then
+      drums.toggle()
     else
       state.chord_type = (state.chord_type % 4) + 1
     end
   elseif n == 3 and z == 1 then
     if state.gospel_page then
-      -- In gospel mode: K3 = trigger build
       if state.gospel_state.building then
         gospel.release_build(state.gospel_state)
       else
         gospel.trigger_build(state.gospel_state, 1.0, 0.05)
       end
+    elseif state.drums_page then
+      drums.next_preset()
     else
       state.octave = math.min(7, state.octave + 1)
     end
@@ -729,38 +776,40 @@ function key(n, z)
   redraw()
 end
 
-local PAGE_NAMES = {"A", "B", "C"}
+local PAGE_NAMES = {"A: PARAMS", "B: OLED", "C: SUNDAY SERVICE", "D: DRUMS"}
+local current_page_idx = 1  -- 1=A, 2=B, 3=C(gospel), 4=D(drums)
+
+local function set_page(idx)
+  current_page_idx = idx
+  state.page_a = (idx == 1)
+  state.gospel_page = (idx == 3)
+  state.drums_page = (idx == 4)
+end
 
 function enc(n, d)
   if n == 1 then
-    -- E1: cycle pages (A -> B -> C -> A)
-    if d > 0 then
-      if state.page_a then
-        state.page_a = false
-        state.gospel_page = false
-      elseif not state.gospel_page then
-        state.gospel_page = true
-        state.page_a = false
-      else
-        state.gospel_page = false
-        state.page_a = true
-      end
-    elseif d < 0 then
-      if state.page_a then
-        state.gospel_page = true
-        state.page_a = false
-      elseif state.gospel_page then
-        state.gospel_page = false
-        state.page_a = false
-      else
-        state.page_a = true
-        state.gospel_page = false
-      end
-    end
-    local page = state.page_a and "A" or (state.gospel_page and "C: SUNDAY SERVICE" or "B")
+    -- E1: cycle pages (A -> B -> C -> D -> A)
+    local new_idx = ((current_page_idx - 1 + d) % 4) + 1
+    set_page(new_idx)
     state.popup_param = "PAGE"
-    state.popup_val = page
+    state.popup_val = PAGE_NAMES[current_page_idx]
     state.popup_time = 10
+  elseif state.drums_page then
+    -- Drums page: E2/E3
+    if n == 2 then
+      local idx = drums.get_preset_idx() + d
+      local num = #drums.PRESET_ORDER
+      idx = ((idx - 1) % num) + 1
+      drums.set_preset(idx)
+      state.popup_param = "GROOVE"
+      state.popup_val = drums.get_preset_name()
+      state.popup_time = 8
+    elseif n == 3 then
+      drums.set_humanize(drums.get_humanize() + d)
+      state.popup_param = "GROOVE AMT"
+      state.popup_val = drums.get_humanize() .. "%"
+      state.popup_time = 8
+    end
   elseif state.gospel_page then
     -- Gospel mode: E2/E3
     local gs = state.gospel_state
@@ -890,8 +939,8 @@ function midi.event(data)
       state.sustained_notes = {}
     else
       state.sustain_held = false
-      for note_num, engine_id in pairs(state.sustained_notes) do
-        engine.noteOff(engine_id)
+      for note_num, _ in pairs(state.sustained_notes) do
+        engine.noteOff(note_num)
         if midi_out then
           pcall(function() midi_out:note_off(note_num, 0, state.midi_channel) end)
         end
@@ -903,16 +952,9 @@ function midi.event(data)
 end
 
 function init()
-  -- MollyThePoly sound params
-  MollyThePoly.add_params()
-  -- Warm chord preset
-  params:set("osc_wave_shape", 0.3)
-  params:set("lp_filter_cutoff", 2000)
-  params:set("lp_filter_resonance", 0.15)
-  params:set("env_2_attack", 0.01)
-  params:set("env_2_decay", 0.8)
-  params:set("env_2_sustain", 0.6)
-  params:set("env_2_release", 1.0)
+  -- Initialize drum module
+  drums.add_params()
+  drums.set_midi_out(midi_out)
 
   for slot = 1, 7 do
     state.chord_slots[slot].notes = build_chord(
@@ -1032,6 +1074,7 @@ function init()
 end
 
 function cleanup()
+  drums.cleanup()
   if state.gospel_mode then gospel_stop() end
   all_notes_off()
   if screen_clock_id then clock.cancel(screen_clock_id) end

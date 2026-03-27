@@ -9,9 +9,9 @@ Engine_SundayService : CroneEngine {
   var <reverbSynth;
   var <delaySynth;
   var <fxBus, <delayBus;
-  var voiceGroup, fxGroup;
+  var voiceGroup, fxGroup, drumGroup;
   var reverb_mix, delay_mix, delay_time, delay_fb;
-  var gain_val;
+  var gain_val, drum_gain;
   var <choirSize;    // 1=quartet, 2=ensemble, 3=full choir
 
   alloc {
@@ -21,10 +21,12 @@ Engine_SundayService : CroneEngine {
     delay_time = 0.375;  // dotted eighth at 120bpm
     delay_fb = 0.35;
     gain_val = 0.6;
+    drum_gain = 0.7;
     choirSize = 2;
 
     voiceGroup = Group.new(Crone.server.defaultGroup, \addToHead);
-    fxGroup    = Group.after(voiceGroup);
+    drumGroup  = Group.after(voiceGroup);
+    fxGroup    = Group.after(drumGroup);
 
     fxBus    = Bus.audio(Crone.server, 2);
     delayBus = Bus.audio(Crone.server, 2);
@@ -129,6 +131,87 @@ Engine_SundayService : CroneEngine {
         gate, doneAction: 2);
 
       sig = Pan2.ar(sig * env * amp, pan);
+      Out.ar(out, sig);
+    }).add;
+
+    // ── DRUM: KICK ────────────────────────────────────────────
+    SynthDef(\drum_kick, {
+      | out=0, amp=0.8, pan=0,
+        freq=52, click=0.7, decay=0.35, drive=1.2, tone=0.6 |
+      var body, clickSig, env, clickEnv, pitchEnv, sig;
+      pitchEnv = EnvGen.ar(Env.perc(0.001, 0.07), 1) * freq * 3;
+      body = SinOsc.ar(freq + pitchEnv);
+      env = EnvGen.ar(Env.perc(0.005, decay, 1, -6), 1, doneAction: 2);
+      clickEnv = EnvGen.ar(Env.perc(0.001, 0.012), 1);
+      clickSig = HPF.ar(WhiteNoise.ar, 800) * clickEnv * click;
+      sig = (body * env * tone) + clickSig;
+      sig = (sig * drive).tanh;
+      sig = Pan2.ar(sig * amp, pan);
+      Out.ar(out, sig);
+    }).add;
+
+    // ── DRUM: SNARE ──────────────────────────────────────────
+    SynthDef(\drum_snare, {
+      | out=0, amp=0.6, pan=0,
+        freq=185, decay=0.18, noiseAmt=0.65, ring=0.4, hpFreq=1200 |
+      var body, noise, bodyEnv, noiseEnv, ringEnv, sig;
+      bodyEnv = EnvGen.ar(Env.perc(0.001, decay * 0.6, 1, -4), 1);
+      body = SinOsc.ar(freq) + SinOsc.ar(freq * 1.6, 0, 0.3);
+      body = body * bodyEnv * (1 - noiseAmt);
+      noiseEnv = EnvGen.ar(Env.perc(0.002, decay, 1, -3), 1, doneAction: 2);
+      noise = HPF.ar(WhiteNoise.ar, hpFreq);
+      noise = BPF.ar(noise, 4200, 0.8) + (noise * 0.3);
+      noise = noise * noiseEnv * noiseAmt;
+      ringEnv = EnvGen.ar(Env.perc(0.001, decay * 1.5, 1, -5), 1);
+      sig = body + noise + (SinOsc.ar(freq * 2.8) * ringEnv * ring * 0.15);
+      sig = Pan2.ar(sig * amp, pan);
+      Out.ar(out, sig);
+    }).add;
+
+    // ── DRUM: HI-HAT ────────────────────────────────────────
+    SynthDef(\drum_hat, {
+      | out=0, amp=0.4, pan=0,
+        decay=0.06, hpFreq=6000, tone=0.5, open=0 |
+      var metallic, noise, env, sig, decayTime;
+      decayTime = Select.kr(open, [decay, decay * 6]);
+      env = EnvGen.ar(Env.perc(0.001, decayTime, 1, -8), 1, doneAction: 2);
+      metallic = Pulse.ar(
+        [205.35, 304.41, 369.64, 522.73, 540.54, 800.0] * (1 + (tone * 0.15)),
+        {rrand(0.3, 0.7)}!6
+      ).sum * 0.15;
+      metallic = HPF.ar(metallic, 8000);
+      noise = HPF.ar(WhiteNoise.ar, hpFreq);
+      sig = (metallic * tone) + (noise * (1 - tone * 0.5));
+      sig = BPF.ar(sig, 10000, 0.5) + (sig * 0.3);
+      sig = sig * env;
+      sig = Pan2.ar(sig * amp, pan);
+      Out.ar(out, sig);
+    }).add;
+
+    // ── DRUM: PERCUSSION (clap/cowbell) ──────────────────────
+    SynthDef(\drum_perc, {
+      | out=0, amp=0.5, pan=0,
+        freq=800, decay=0.15, tone=0.5, spread=0.02, mode=0 |
+      var sig, env;
+      sig = Select.ar(mode.clip(0,1), [
+        {
+          var n, e;
+          e = Mix.fill(4, { |i|
+            EnvGen.ar(Env.perc(0.001, 0.008), TDelay.kr(Impulse.kr(0), i * spread))
+          });
+          n = BPF.ar(WhiteNoise.ar, 1200 + (tone * 2000), 0.6) * e;
+          n = n + (BPF.ar(WhiteNoise.ar, 2600, 0.4) *
+            EnvGen.ar(Env.perc(0.001, decay), 1));
+          n
+        }.value,
+        {
+          var e = EnvGen.ar(Env.perc(0.001, decay * 0.8, 1, -5), 1);
+          (Pulse.ar(freq, 0.5) + Pulse.ar(freq * 1.5, 0.5)) * 0.2 * e
+        }.value
+      ]);
+      env = EnvGen.ar(Env.perc(0.001, decay * 1.5), 1, doneAction: 2);
+      sig = sig * env;
+      sig = Pan2.ar(sig * amp, pan);
       Out.ar(out, sig);
     }).add;
 
@@ -299,6 +382,74 @@ Engine_SundayService : CroneEngine {
       voices.do({ |v| v.set(\gate, 0) });
       voices = Dictionary.new;
     });
+
+    // ── Drum Commands ────────────────────────────────────────
+    this.addCommand(\drumKick, "ffff", { |msg|
+      var vel = msg[1].asFloat.clip(0, 1);
+      var pitchVar = msg[2].asFloat;
+      var decayVar = msg[3].asFloat;
+      var clickVar = msg[4].asFloat;
+      Synth(\drum_kick, [
+        \out, context.out_b.index, \amp, vel * drum_gain,
+        \pan, rrand(-0.05, 0.05),
+        \freq, 52 + (pitchVar * 8) + rrand(-1.5, 1.5),
+        \click, (0.7 + (clickVar * 0.3)).clip(0, 1),
+        \decay, (0.35 + (decayVar * 0.12)).clip(0.08, 0.6),
+        \drive, 1.2 + rrand(-0.1, 0.2),
+        \tone, 0.6 + rrand(-0.05, 0.05)
+      ], target: drumGroup);
+    });
+
+    this.addCommand(\drumSnare, "ffff", { |msg|
+      var vel = msg[1].asFloat.clip(0, 1);
+      var pitchVar = msg[2].asFloat;
+      var decayVar = msg[3].asFloat;
+      var noiseVar = msg[4].asFloat;
+      Synth(\drum_snare, [
+        \out, context.out_b.index, \amp, vel * drum_gain,
+        \pan, rrand(-0.15, 0.15),
+        \freq, 185 + (pitchVar * 20) + rrand(-4, 4),
+        \decay, (0.18 + (decayVar * 0.06)).clip(0.04, 0.4),
+        \noiseAmt, (0.65 + (noiseVar * 0.2)).clip(0.2, 0.95),
+        \ring, 0.4 + rrand(-0.1, 0.1),
+        \hpFreq, 1200 + rrand(-200, 200)
+      ], target: drumGroup);
+    });
+
+    this.addCommand(\drumHat, "fffi", { |msg|
+      var vel = msg[1].asFloat.clip(0, 1);
+      var decayVar = msg[2].asFloat;
+      var toneVar = msg[3].asFloat;
+      var open = msg[4].asInteger.clip(0, 1);
+      Synth(\drum_hat, [
+        \out, context.out_b.index, \amp, vel * drum_gain * 0.7,
+        \pan, rrand(-0.2, 0.2),
+        \decay, (0.06 + (decayVar * 0.03)).clip(0.02, 0.2),
+        \hpFreq, 6000 + rrand(-500, 500),
+        \tone, (0.5 + (toneVar * 0.2)).clip(0.1, 0.9),
+        \open, open
+      ], target: drumGroup);
+    });
+
+    this.addCommand(\drumPerc, "fffi", { |msg|
+      var vel = msg[1].asFloat.clip(0, 1);
+      var decayVar = msg[2].asFloat;
+      var toneVar = msg[3].asFloat;
+      var mode = msg[4].asInteger.clip(0, 1);
+      Synth(\drum_perc, [
+        \out, context.out_b.index, \amp, vel * drum_gain * 0.6,
+        \pan, rrand(-0.25, 0.25),
+        \freq, 800 + rrand(-30, 30),
+        \decay, (0.15 + (decayVar * 0.06)).clip(0.04, 0.3),
+        \tone, (0.5 + (toneVar * 0.15)).clip(0.1, 0.9),
+        \spread, 0.02 + rrand(-0.005, 0.005),
+        \mode, mode
+      ], target: drumGroup);
+    });
+
+    this.addCommand(\drumGain, "f", { |msg|
+      drum_gain = msg[1].asFloat.clip(0.0, 1.0);
+    });
   }
 
   free {
@@ -308,6 +459,7 @@ Engine_SundayService : CroneEngine {
     fxBus       !? { fxBus.free };
     delayBus    !? { delayBus.free };
     voiceGroup  !? { voiceGroup.free };
+    drumGroup   !? { drumGroup.free };
     fxGroup     !? { fxGroup.free };
   }
 }
