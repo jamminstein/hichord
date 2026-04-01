@@ -1,8 +1,8 @@
--- hichord.lua  v5.0 — Congregation + Drums Edition
--- Norns port of HiChord (hichord.shop) firmware 2.6.9
--- Grid = physical HiChord device replica (16×8)
+-- heychord.lua  v5.0 — Congregation + Drums Edition
+-- Norns port of HeyChord (heychord.shop) firmware 2.6.9
+-- Grid = physical HeyChord device replica (16×8)
 -- Norns screen Page A = traditional param/menu display
--- Norns screen Page B = animated HiChord OLED replica
+-- Norns screen Page B = animated HeyChord OLED replica
 -- Page C = CONGREGATION gospel-hip-hop automation
 -- Page D = DRUMS humanized sequencer
 -- OP-XY MIDI: strum timing mapped to CC 20 (attack)
@@ -11,8 +11,8 @@ engine.name = "Congregation"
 
 local ControlSpec = require "controlspec"
 local tab = require "tabutil"
-local gospel = require "hichord/lib/gospel"
-local drums = require "hichord/lib/drums"
+local gospel = require "heychord/lib/gospel"
+local drums = require "heychord/lib/drums"
 
 -- OP-XY MIDI helpers
 local opxy_out = nil
@@ -599,7 +599,7 @@ function redraw()
   elseif state.page_a then
     screen.level(15)
     screen.move(0, 10)
-    screen.text("HICHORD v5.0")
+    screen.text("HEYCHORD v5.0")
     
     screen.level(8)
     screen.move(0, 22)
@@ -637,7 +637,7 @@ function redraw()
     -- PAGE B: animated display
     screen.level(4)
     screen.move(2, 7)
-    screen.text("HICHORD")
+    screen.text("HEYCHORD")
     
     screen.level(12)
     screen.move(64, 8)

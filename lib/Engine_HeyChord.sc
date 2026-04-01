@@ -1,4 +1,4 @@
-Engine_HiChord : CroneEngine {
+Engine_HeyChord : CroneEngine {
 
   var <synths;
   var <reverbSynth;
@@ -16,7 +16,7 @@ Engine_HiChord : CroneEngine {
 
     fxBus = Bus.audio(Crone.server, 2);
 
-    SynthDef(\hichord_voice, {
+    SynthDef(\heychord_voice, {
       | out=0, freq=440, amp=0.5, pan=0,
         attack=0.01, decay=0.1, sustain=0.7, release=0.8,
         cutoff=3000, res=0.15, waveform=0, gate=1 |
@@ -34,7 +34,7 @@ Engine_HiChord : CroneEngine {
       Out.ar(out, sig);
     }).add;
 
-    SynthDef(\hichord_reverb, {
+    SynthDef(\heychord_reverb, {
       | in=0, out=0, mix=0.2 |
       var sig, wet;
       sig = In.ar(in, 2);
@@ -44,7 +44,7 @@ Engine_HiChord : CroneEngine {
 
     Crone.server.sync;
 
-    reverbSynth = Synth(\hichord_reverb,
+    reverbSynth = Synth(\heychord_reverb,
       [\in, fxBus.index, \out, context.out_b.index, \mix, reverb_mix],
       target: fxGroup);
 
@@ -52,7 +52,7 @@ Engine_HiChord : CroneEngine {
       var note = msg[1].asInteger;
       var vel  = msg[2].asFloat;
       synths[note] !? { |v| v.set(\gate, 0) };
-      synths[note] = Synth(\hichord_voice, [
+      synths[note] = Synth(\heychord_voice, [
         \out,  fxBus.index,
         \freq, note.midicps,
         \amp,  vel * gain_val,

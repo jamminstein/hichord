@@ -1,5 +1,5 @@
 // Engine_Congregation.sc
-// Choir voice + drums engine for HiChord
+// Choir voice + drums engine for HeyChord
 // SATB voices with formant shaping, vibrato, breath texture,
 // cathedral reverb, humanized drums, and lush space
 

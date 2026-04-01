@@ -1,5 +1,5 @@
 -- lib/drums.lua
--- Humanized drum sequencer for HiChord
+-- Humanized drum sequencer for HeyChord
 -- Groove templates, ghost notes, micro-timing, probability
 
 local drums = {}

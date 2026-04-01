@@ -1,5 +1,5 @@
 -- gospel.lua
--- Congregation: choir automation layer for HiChord
+-- Congregation: choir automation layer for HeyChord
 -- SATB voicing, generative call-and-response,
 -- intensity builds, and mood-driven progressions
 
